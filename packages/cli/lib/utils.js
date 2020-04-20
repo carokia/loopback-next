@@ -30,11 +30,14 @@ const kebabCase = _.kebabCase;
 const untildify = require('untildify');
 const tildify = require('tildify');
 const readdirAsync = promisify(fs.readdir);
+const g = require('./globalize');
 const toFileName = name => {
   return kebabCase(name).replace(/\-(\d+)$/g, '$1');
 };
 
 const RESERVED_PROPERTY_NAMES = ['constructor'];
+const ERROR_MESSAGE_1 = g.f('Class name cannot be empty');
+const ERROR_MESSAGE_2 = g.f('Class name cannot start with a number:');
 
 /**
  * Either a reference to util.promisify or its polyfill, depending on
@@ -78,13 +81,13 @@ exports.validRegex = validRegex;
  */
 exports.validateClassName = function (name) {
   if (!name || name === '') {
-    return 'Class name cannot be empty';
+    return ERROR_MESSAGE_1;
   }
   if (name.match(validRegex)) {
     return true;
   }
   if (!isNaN(name.charAt(0))) {
-    return util.format('Class name cannot start with a number: %s', name);
+    return ERROR_MESSAGE_2 + util.format('%s', name);
   }
   if (name.includes('.')) {
     return util.format('Class name cannot contain .: %s', name);
@@ -97,9 +100,9 @@ exports.validateClassName = function (name) {
   }
   if (name.match(/[\/@\s\+%:]/)) {
     return util.format(
-      'Class name cannot contain special characters (/@+%: ): %s',
+      g.f('Class name cannot contain special characters (/@+%: ): %s',
       name,
-    );
+    ));
   }
   return util.format('Class name is invalid: %s', name);
 };
@@ -114,7 +117,7 @@ exports.logNamingIssues = function (name, log) {
   if (name.match(/[\u00C0-\u024F\u1E00-\u1EFF]/)) {
     log(
       chalk.red('>>> ') +
-        `Accented chars in the class name will get replaced: ${name}`,
+      g.f('Accented chars in the class name will get replaced: {0}', `${name}`),
     );
   }
 };
@@ -123,7 +126,7 @@ exports.logClassCreation = function (type, typePlural, name, log) {
   log(
     `${exports.toClassName(type)} ${chalk.yellow(
       name,
-    )} will be created in src/${typePlural}/${chalk.yellow(
+    )} ${g.f('will be created in')} src/${typePlural}/${chalk.yellow(
       exports.toFileName(name) + '.' + `${type}.ts`,
     )}`,
   );
@@ -146,7 +149,8 @@ exports.validateNotExisting = function (projDir) {
 /* istanbul ignore next */
 exports.validateKeyName = function (name) {
   if (!name || name === '') {
-    return 'Key name cannot be empty';
+    const e = g.f('Key name cannot be empty');
+    return e;
   }
   if (!isNaN(name.charAt(0))) {
     return util.format('Key name cannot start with a number: %s', name);
